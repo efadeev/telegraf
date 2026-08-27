@@ -15,11 +15,11 @@ func collectIngress(ctx context.Context, acc telegraf.Accumulator, ki *Kubernete
 		return
 	}
 	for _, i := range list.Items {
-		gatherIngress(i, acc)
+		ki.gatherIngress(i, acc)
 	}
 }
 
-func gatherIngress(i netv1.Ingress, acc telegraf.Accumulator) {
+func (ki *KubernetesInventory) gatherIngress(i netv1.Ingress, acc telegraf.Accumulator) {
 	creationTS := i.GetCreationTimestamp()
 	if creationTS.IsZero() {
 		return
@@ -34,6 +34,7 @@ func gatherIngress(i netv1.Ingress, acc telegraf.Accumulator) {
 		"ingress_name": i.Name,
 		"namespace":    i.Namespace,
 	}
+	ki.addLabelTags(tags, i.Labels)
 
 	for _, ingress := range i.Status.LoadBalancer.Ingress {
 		tags["hostname"] = ingress.Hostname

@@ -111,6 +111,7 @@ func (ki *KubernetesInventory) gatherPodContainer(p *corev1.Pod, cs corev1.Conta
 			tags["node_selector_"+key] = val
 		}
 	}
+	ki.addLabelTags(tags, p.Labels)
 
 	req := c.Resources.Requests
 	lim := c.Resources.Limits
@@ -145,6 +146,7 @@ func (ki *KubernetesInventory) gatherPodContainer(p *corev1.Pod, cs corev1.Conta
 		if len(splitImage) == 2 {
 			conditiontags["version"] = splitImage[1]
 		}
+		ki.addLabelTags(conditiontags, p.Labels)
 		running := 0
 		podready := 0
 		if val.Status == "True" {

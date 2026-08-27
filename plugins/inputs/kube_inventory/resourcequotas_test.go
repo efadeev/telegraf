@@ -91,8 +91,10 @@ func TestResourceQuota(t *testing.T) {
 
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		acc := new(testutil.Accumulator)
 		for _, quota := range ((v.handler.responseMap["/resourcequotas/"]).(corev1.ResourceQuotaList)).Items {
 			ks.gatherResourceQuota(quota, acc)

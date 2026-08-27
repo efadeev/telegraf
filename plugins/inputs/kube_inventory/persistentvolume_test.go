@@ -77,10 +77,12 @@ func TestPersistentVolume(t *testing.T) {
 	}
 
 	for _, v := range tests {
+		ks := &KubernetesInventory{LabelExclude: []string{"*"}}
+		require.NoError(t, ks.createLabelFilters())
 		acc := new(testutil.Accumulator)
 		items := ((v.handler.responseMap["/persistentvolumes/"]).(*corev1.PersistentVolumeList)).Items
 		for i := range items {
-			gatherPersistentVolume(&items[i], acc)
+			ks.gatherPersistentVolume(&items[i], acc)
 		}
 
 		err := acc.FirstError()

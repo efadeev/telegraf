@@ -16,11 +16,11 @@ func collectPersistentVolumes(ctx context.Context, acc telegraf.Accumulator, ki 
 		return
 	}
 	for i := range list.Items {
-		gatherPersistentVolume(&list.Items[i], acc)
+		ki.gatherPersistentVolume(&list.Items[i], acc)
 	}
 }
 
-func gatherPersistentVolume(pv *corev1.PersistentVolume, acc telegraf.Accumulator) {
+func (ki *KubernetesInventory) gatherPersistentVolume(pv *corev1.PersistentVolume, acc telegraf.Accumulator) {
 	phaseType := 5
 	switch strings.ToLower(string(pv.Status.Phase)) {
 	case "bound":
@@ -42,6 +42,7 @@ func gatherPersistentVolume(pv *corev1.PersistentVolume, acc telegraf.Accumulato
 		"phase":        string(pv.Status.Phase),
 		"storageclass": pv.Spec.StorageClassName,
 	}
+	ki.addLabelTags(tags, pv.Labels)
 
 	acc.AddFields(persistentVolumeMeasurement, fields, tags)
 }

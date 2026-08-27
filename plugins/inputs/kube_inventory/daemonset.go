@@ -39,6 +39,7 @@ func (ki *KubernetesInventory) gatherDaemonSet(d *apps.DaemonSet, acc telegraf.A
 			tags["selector_"+key] = val
 		}
 	}
+	ki.addLabelTags(tags, d.Labels)
 
 	creationTS := d.GetCreationTimestamp()
 	if !creationTS.IsZero() {

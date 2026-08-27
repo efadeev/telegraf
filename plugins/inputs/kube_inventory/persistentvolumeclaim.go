@@ -48,6 +48,7 @@ func (ki *KubernetesInventory) gatherPersistentVolumeClaim(pvc corev1.Persistent
 			}
 		}
 	}
+	ki.addLabelTags(tags, pvc.Labels)
 
 	acc.AddFields(persistentVolumeClaimMeasurement, fields, tags)
 }

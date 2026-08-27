@@ -102,8 +102,10 @@ func TestService(t *testing.T) {
 
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		ks.SelectorInclude = v.include
 		ks.SelectorExclude = v.exclude
 		require.NoError(t, ks.createSelectorFilters())
@@ -255,8 +257,10 @@ func TestServiceSelectorFilter(t *testing.T) {
 	}
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		ks.SelectorInclude = v.include
 		ks.SelectorExclude = v.exclude
 		require.NoError(t, ks.createSelectorFilters())

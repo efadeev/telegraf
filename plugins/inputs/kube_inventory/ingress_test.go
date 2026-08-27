@@ -218,9 +218,11 @@ func TestIngress(t *testing.T) {
 	}
 
 	for _, v := range tests {
+		ks := &KubernetesInventory{LabelExclude: []string{"*"}}
+		require.NoError(t, ks.createLabelFilters())
 		acc := new(testutil.Accumulator)
 		for _, ingress := range ((v.handler.responseMap["/ingress/"]).(netv1.IngressList)).Items {
-			gatherIngress(ingress, acc)
+			ks.gatherIngress(ingress, acc)
 		}
 
 		err := acc.FirstError()

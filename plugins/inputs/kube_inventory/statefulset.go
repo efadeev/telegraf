@@ -44,6 +44,7 @@ func (ki *KubernetesInventory) gatherStatefulSet(s *v1.StatefulSet, acc telegraf
 			}
 		}
 	}
+	ki.addLabelTags(tags, s.Labels)
 
 	acc.AddFields(statefulSetMeasurement, fields, tags)
 }

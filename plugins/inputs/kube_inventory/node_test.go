@@ -154,8 +154,10 @@ func TestNode(t *testing.T) {
 
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		acc := new(testutil.Accumulator)
 		items := ((v.handler.responseMap["/nodes/"]).(corev1.NodeList)).Items
 		for i := range items {

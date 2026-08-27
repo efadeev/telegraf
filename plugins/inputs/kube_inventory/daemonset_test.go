@@ -101,8 +101,10 @@ func TestDaemonSet(t *testing.T) {
 
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		require.NoError(t, ks.createSelectorFilters())
 		acc := new(testutil.Accumulator)
 		items := ((v.handler.responseMap["/daemonsets/"]).(*apps.DaemonSetList)).Items
@@ -253,8 +255,10 @@ func TestDaemonSetSelectorFilter(t *testing.T) {
 	}
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		ks.SelectorInclude = v.include
 		ks.SelectorExclude = v.exclude
 		require.NoError(t, ks.createSelectorFilters())

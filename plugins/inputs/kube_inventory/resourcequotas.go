@@ -26,6 +26,7 @@ func (ki *KubernetesInventory) gatherResourceQuota(r corev1.ResourceQuota, acc t
 		"resource":  r.Name,
 		"namespace": r.Namespace,
 	}
+	ki.addLabelTags(tags, r.Labels)
 
 	for resourceName, val := range r.Status.Hard {
 		switch resourceName {

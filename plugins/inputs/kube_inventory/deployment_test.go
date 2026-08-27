@@ -106,8 +106,10 @@ func TestDeployment(t *testing.T) {
 
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		require.NoError(t, ks.createSelectorFilters())
 		acc := new(testutil.Accumulator)
 		items := ((v.handler.responseMap["/deployments/"]).(*v1.DeploymentList)).Items
@@ -269,8 +271,10 @@ func TestDeploymentSelectorFilter(t *testing.T) {
 	}
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		ks.SelectorInclude = v.include
 		ks.SelectorExclude = v.exclude
 		require.NoError(t, ks.createSelectorFilters())
@@ -292,5 +296,105 @@ func TestDeploymentSelectorFilter(t *testing.T) {
 
 		require.Equalf(t, v.expected, actual,
 			"actual selector tags (%v) do not match expected selector tags (%v)", actual, v.expected)
+	}
+}
+
+func TestDeploymentLabelFilter(t *testing.T) {
+	cli := &client{}
+	now := time.Now()
+	now = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 1, 36, 0, now.Location())
+
+	responseMap := map[string]interface{}{
+		"/deployments/": &v1.DeploymentList{
+			Items: []v1.Deployment{
+				{
+					Spec: v1.DeploymentSpec{
+						Replicas: new(int32(4)),
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"select1": "s1",
+							},
+						},
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Generation:        11221,
+						Namespace:         "ns1",
+						Name:              "deploy1",
+						Labels:            map[string]string{"lab1": "v1", "lab2": "v2"},
+						CreationTimestamp: metav1.Time{Time: now},
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		include  []string
+		exclude  []string
+		expected map[string]string
+	}{
+		{
+			name:     "default excludes all labels",
+			exclude:  []string{"*"},
+			expected: map[string]string{},
+		},
+		{
+			name:     "empty filters equals all labels",
+			expected: map[string]string{"lab1": "v1", "lab2": "v2"},
+		},
+		{
+			name:     "include filter equals only include-matched labels",
+			include:  []string{"lab1"},
+			expected: map[string]string{"lab1": "v1"},
+		},
+		{
+			name:     "exclude filter equals only non-excluded labels",
+			exclude:  []string{"lab2"},
+			expected: map[string]string{"lab1": "v1"},
+		},
+		{
+			name:     "include glob filter equals only include-matched labels",
+			include:  []string{"*1"},
+			expected: map[string]string{"lab1": "v1"},
+		},
+		{
+			name:     "exclude filter overrides include filter",
+			include:  []string{"lab1", "lab2"},
+			exclude:  []string{"lab2"},
+			expected: map[string]string{"lab1": "v1"},
+		},
+	}
+
+	for _, v := range tests {
+		t.Run(v.name, func(t *testing.T) {
+			ks := &KubernetesInventory{
+				client:          cli,
+				LabelInclude:    v.include,
+				LabelExclude:    v.exclude,
+				SelectorExclude: []string{"*"},
+			}
+			require.NoError(t, ks.createLabelFilters())
+			require.NoError(t, ks.createSelectorFilters())
+
+			acc := new(testutil.Accumulator)
+			items := responseMap["/deployments/"].(*v1.DeploymentList).Items
+			for i := range items {
+				ks.gatherDeployment(&items[i], acc)
+			}
+
+			// Grab the label tags, ignoring the tags the plugin sets itself
+			actual := map[string]string{}
+			for _, m := range acc.Metrics {
+				for key, val := range m.Tags {
+					if strings.HasPrefix(key, "lab") {
+						actual[key] = val
+					}
+				}
+			}
+
+			require.Equalf(t, v.expected, actual,
+				"actual label tags (%v) do not match expected label tags (%v)", actual, v.expected)
+		})
 	}
 }

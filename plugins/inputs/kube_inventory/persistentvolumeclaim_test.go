@@ -189,8 +189,10 @@ func TestPersistentVolumeClaim(t *testing.T) {
 
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		require.NoError(t, ks.createSelectorFilters())
 		acc := new(testutil.Accumulator)
 		for _, pvc := range ((v.handler.responseMap["/persistentvolumeclaims/"]).(*corev1.PersistentVolumeClaimList)).Items {
@@ -337,8 +339,10 @@ func TestPersistentVolumeClaimSelectorFilter(t *testing.T) {
 	}
 	for _, v := range tests {
 		ks := &KubernetesInventory{
-			client: cli,
+			client:       cli,
+			LabelExclude: []string{"*"},
 		}
+		require.NoError(t, ks.createLabelFilters())
 		ks.SelectorInclude = v.include
 		ks.SelectorExclude = v.exclude
 		require.NoError(t, ks.createSelectorFilters())

@@ -16,11 +16,11 @@ func collectEndpoints(ctx context.Context, acc telegraf.Accumulator, ki *Kuberne
 		return
 	}
 	for _, i := range list.Items {
-		gatherEndpoint(i, acc)
+		ki.gatherEndpoint(i, acc)
 	}
 }
 
-func gatherEndpoint(e discoveryv1.EndpointSlice, acc telegraf.Accumulator) {
+func (ki *KubernetesInventory) gatherEndpoint(e discoveryv1.EndpointSlice, acc telegraf.Accumulator) {
 	creationTS := e.GetCreationTimestamp()
 	if creationTS.IsZero() {
 		return
@@ -35,6 +35,7 @@ func gatherEndpoint(e discoveryv1.EndpointSlice, acc telegraf.Accumulator) {
 		"endpoint_name": e.Name,
 		"namespace":     e.Namespace,
 	}
+	ki.addLabelTags(tags, e.Labels)
 
 	for _, endpoint := range e.Endpoints {
 		if endpoint.Conditions.Ready == nil {

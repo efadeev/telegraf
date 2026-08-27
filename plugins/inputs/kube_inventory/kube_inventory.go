@@ -68,6 +68,9 @@ type KubernetesInventory struct {
 	SelectorInclude []string `toml:"selector_include"`
 	SelectorExclude []string `toml:"selector_exclude"`
 
+	LabelInclude []string `toml:"label_include"`
+	LabelExclude []string `toml:"label_exclude"`
+
 	NodeName string          `toml:"node_name"`
 	Log      telegraf.Logger `toml:"-"`
 
@@ -76,6 +79,7 @@ type KubernetesInventory struct {
 	httpClient *http.Client
 
 	selectorFilter filter.Filter
+	labelFilter    filter.Filter
 }
 
 func (*KubernetesInventory) SampleConfig() string {
@@ -86,6 +90,10 @@ func (ki *KubernetesInventory) Init() error {
 	// If bearer_token is not provided, use the default service account.
 	if ki.BearerToken == "" {
 		ki.BearerToken = defaultServiceAccountPath
+	}
+
+	if err := ki.createLabelFilters(); err != nil {
+		return err
 	}
 
 	var err error
@@ -194,6 +202,25 @@ func (ki *KubernetesInventory) createSelectorFilters() error {
 	return nil
 }
 
+func (ki *KubernetesInventory) createLabelFilters() error {
+	labelFilter, err := filter.NewIncludeExcludeFilter(ki.LabelInclude, ki.LabelExclude)
+	if err != nil {
+		return err
+	}
+	ki.labelFilter = labelFilter
+	return nil
+}
+
+// addLabelTags adds the labels of a Kubernetes object as tags, subject to the
+// 'label_include' and 'label_exclude' filters.
+func (ki *KubernetesInventory) addLabelTags(tags, labels map[string]string) {
+	for k, v := range labels {
+		if ki.labelFilter.Match(k) {
+			tags[k] = v
+		}
+	}
+}
+
 func init() {
 	inputs.Add("kube_inventory", func() telegraf.Input {
 		return &KubernetesInventory{
@@ -201,6 +228,8 @@ func init() {
 			Namespace:       "default",
 			SelectorInclude: make([]string, 0),
 			SelectorExclude: []string{"*"},
+			LabelInclude:    make([]string, 0),
+			LabelExclude:    []string{"*"},
 		}
 	})
 }

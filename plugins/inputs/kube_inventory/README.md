@@ -70,6 +70,13 @@ plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
   # selector_include = []
   # selector_exclude = ["*"]
 
+  ## labels of the gathered objects to include and exclude as tags.  Globs
+  ## accepted.
+  ## Note that an empty array for both will include all labels as tags
+  ## label_exclude overrides label_include if both set.
+  # label_include = []
+  # label_exclude = ["*"]
+
   ## Optional TLS Config
   ## Trusted root certificates for server
   # tls_ca = "/path/to/cafile"
@@ -168,6 +175,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - daemonset_name
     - namespace
     - selector (\*varies)
+    - label (\*varies)
   - fields:
     - generation
     - current_number_scheduled
@@ -183,6 +191,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - deployment_name
     - namespace
     - selector (\*varies)
+    - label (\*varies)
   - fields:
     - replicas_available
     - replicas_unavailable
@@ -197,6 +206,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - port_name
     - port_protocol
     - kind (\*varies)
+    - label (\*varies)
   - fields:
     - created
     - generation
@@ -212,6 +222,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - backend_service_name
     - path
     - host
+    - label (\*varies)
   - fields:
     - created
     - generation
@@ -224,6 +235,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - status
     - condition
     - cluster_namespace
+    - label (\*varies)
   - fields:
     - capacity_cpu_cores
     - capacity_millicpu_cores
@@ -242,6 +254,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - pv_name
     - phase
     - storageclass
+    - label (\*varies)
   - fields:
     - phase_type (int, [see below](#pv-phase_type))
 
@@ -252,6 +265,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - phase
     - storageclass
     - selector (\*varies)
+    - label (\*varies)
   - fields:
     - phase_type (int, [see below](#pvc-phase_type))
 
@@ -266,6 +280,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - state
     - readiness
     - condition
+    - label (\*varies)
   - fields:
     - restarts_total
     - state_code
@@ -287,6 +302,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - external_name
     - cluster_ip
     - selector (\*varies)
+    - label (\*varies)
   - fields
     - created
     - generation
@@ -298,6 +314,7 @@ tls_key = "/run/telegraf-kubernetes-key"
     - statefulset_name
     - namespace
     - selector (\*varies)
+    - label (\*varies)
   - fields:
     - created
     - generation
@@ -312,6 +329,7 @@ tls_key = "/run/telegraf-kubernetes-key"
   - tags:
     - resource
     - namespace
+    - label (\*varies)
   - fields:
     - hard_cpu_limits
     - hard_cpu_requests

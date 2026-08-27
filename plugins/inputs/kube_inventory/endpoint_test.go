@@ -457,9 +457,11 @@ func TestEndpoint(t *testing.T) {
 	}
 
 	for _, v := range tests {
+		ks := &KubernetesInventory{LabelExclude: []string{"*"}}
+		require.NoError(t, ks.createLabelFilters())
 		acc := new(testutil.Accumulator)
 		for _, endpoint := range ((v.handler.responseMap["/endpoints/"]).(*discoveryv1.EndpointSliceList)).Items {
-			gatherEndpoint(endpoint, acc)
+			ks.gatherEndpoint(endpoint, acc)
 		}
 
 		err := acc.FirstError()
