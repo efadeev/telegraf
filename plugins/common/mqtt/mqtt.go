@@ -34,6 +34,10 @@ type MqttConfig struct {
 	Retain              bool               `toml:"retain"`
 	KeepAlive           int64              `toml:"keep_alive"`
 	PersistentSession   bool               `toml:"persistent_session"`
+	LastWillTopic       string             `toml:"last_will_topic"`
+	LastWillPayload     string             `toml:"last_will_payload"`
+	LastWillQoS         int                `toml:"last_will_qos"`
+	LastWillRetain      bool               `toml:"last_will_retain"`
 	PublishPropertiesV5 *PublishProperties `toml:"v5"`
 	ClientTrace         bool               `toml:"client_trace" deprecated:"1.37.0;1.45.0;use 'log_level' 'trace' instead"`
 

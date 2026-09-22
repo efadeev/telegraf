@@ -101,6 +101,14 @@ to use them.
   ## actually reads it
   # retain = false
 
+  ## Last Will and Testament
+  ## Message published by the broker on behalf of Telegraf if the connection
+  ## is lost ungracefully. The will is only set if a topic is specified.
+  # last_will_topic = ""
+  # last_will_payload = ""
+  # last_will_qos = 0
+  # last_will_retain = false
+
   ## Layout of the topics published.
   ## The following choices are available:
   ##   non-batch -- send individual messages, one for each metric

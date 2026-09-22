@@ -797,6 +797,111 @@ func createMetricMessageHandler(acc telegraf.Accumulator, parser telegraf.Parser
 	}
 }
 
+func TestIntegrationMQTTLastWill(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	container := launchTestContainer(t)
+	defer container.Terminate()
+	url := fmt.Sprintf("tcp://%s:%s", container.Address, container.Ports[servicePort])
+
+	for _, protocol := range []string{"3.1.1", "5"} {
+		t.Run(protocol, func(t *testing.T) {
+			clientID := "telegraf-lwt-" + protocol
+			willTopic := "telegraf/status/" + protocol
+
+			// Subscribe to the last-will topic
+			received := make(chan paho.Message, 1)
+			subOpts := paho.NewClientOptions().AddBroker(url).SetClientID(clientID + "-subscriber")
+			subscriber := paho.NewClient(subOpts)
+			token := subscriber.Connect()
+			require.True(t, token.WaitTimeout(5*time.Second))
+			require.NoError(t, token.Error())
+			defer subscriber.Disconnect(100)
+			token = subscriber.Subscribe(willTopic, 1, func(_ paho.Client, msg paho.Message) {
+				select {
+				case received <- msg:
+				default:
+				}
+			})
+			require.True(t, token.WaitTimeout(5*time.Second))
+			require.NoError(t, token.Error())
+
+			plugin := &MQTT{
+				MqttConfig: mqtt.MqttConfig{
+					Servers:         []string{url},
+					Protocol:        protocol,
+					ClientID:        clientID,
+					KeepAlive:       30,
+					Timeout:         config.Duration(5 * time.Second),
+					LastWillTopic:   willTopic,
+					LastWillPayload: "offline",
+					LastWillQoS:     1,
+				},
+				Topic: "telegraf",
+				Log:   testutil.Logger{Name: "mqtt-lwt-integration-test"},
+			}
+			plugin.SetSerializer(&serializers_influx.Serializer{})
+			require.NoError(t, plugin.Init())
+			require.NoError(t, plugin.Connect())
+			defer plugin.Close()
+
+			// Take over the session to drop the plugin's connection ungracefully
+			takeoverOpts := paho.NewClientOptions().AddBroker(url).SetClientID(clientID)
+			takeover := paho.NewClient(takeoverOpts)
+			token = takeover.Connect()
+			require.True(t, token.WaitTimeout(5*time.Second))
+			require.NoError(t, token.Error())
+			defer takeover.Disconnect(100)
+
+			select {
+			case msg := <-received:
+				require.Equal(t, willTopic, msg.Topic())
+				require.Equal(t, "offline", string(msg.Payload()))
+			case <-time.After(5 * time.Second):
+				require.Fail(t, "last-will message not received")
+			}
+		})
+	}
+}
+
+func TestLastWillInvalid(t *testing.T) {
+	tests := []struct {
+		name     string
+		topic    string
+		qos      int
+		expected string
+	}{
+		{
+			name:     "wildcard in topic",
+			topic:    "telegraf/+/status",
+			expected: "forbidden character",
+		},
+		{
+			name:     "invalid qos",
+			topic:    "telegraf/status",
+			qos:      3,
+			expected: "last_will_qos value must be 0, 1, or 2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plugin := &MQTT{
+				MqttConfig: mqtt.MqttConfig{
+					Servers:       []string{"tcp://localhost:1883"},
+					LastWillTopic: tt.topic,
+					LastWillQoS:   tt.qos,
+				},
+				Topic: "telegraf",
+				Log:   testutil.Logger{},
+			}
+			require.ErrorContains(t, plugin.Init(), tt.expected)
+		})
+	}
+}
+
 func TestMissingServers(t *testing.T) {
 	plugin := &MQTT{}
 	require.ErrorContains(t, plugin.Init(), "no servers specified")

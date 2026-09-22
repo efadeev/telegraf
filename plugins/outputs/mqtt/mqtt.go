@@ -66,6 +66,14 @@ func (m *MQTT) Init() error {
 	if m.QoS > 2 || m.QoS < 0 {
 		return fmt.Errorf("qos value must be 0, 1, or 2: %d", m.QoS)
 	}
+	if m.LastWillTopic != "" {
+		if strings.ContainsAny(m.LastWillTopic, "#+") {
+			return fmt.Errorf("found forbidden character in the last-will topic %s", m.LastWillTopic)
+		}
+		if m.LastWillQoS > 2 || m.LastWillQoS < 0 {
+			return fmt.Errorf("last_will_qos value must be 0, 1, or 2: %d", m.LastWillQoS)
+		}
+	}
 
 	// Prepare the topic
 	topic := hostnameRe.ReplaceAllString(m.Topic, `$1.Tag "host"$2`)
